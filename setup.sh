@@ -13,8 +13,10 @@ echo "Installing essential packages..."
 apt-get install -y nano fish curl zip unzip nginx ufw
 
 echo "Configuring Firewall (UFW)..."
-ufw allow ssh
-ufw --force enable
+sudo ufw enable
+sudo ufw allow ssh
+sudo ufw allow 22
+sudo ufw allow 22/tcp
 echo "✅ Firewall enabled and SSH allowed."
 
 echo "Setting Fish as the default shell for the current user and root..."
