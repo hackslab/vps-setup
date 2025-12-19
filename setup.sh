@@ -78,3 +78,6 @@ echo "    - Node.js (Latest), npm, and PM2 are ready."
 echo "    - Python 3 and Pip are installed."
 echo -e "\n\e[1;33mIMPORTANT: To start using the Fish shell, you must log out and log back in.\e[0m"
 echo -e "\nEnjoy your new, powerful development environment! 🚀\n"
+
+# Self-destruct: Delete this script after completion
+rm -- "$0"
