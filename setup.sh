@@ -1,85 +1,85 @@
+VPS Setup Troubleshooting
+
+1. The Error: UFW Confirmation
+
+The script failed because ufw enable is a safety-critical command. It asks for confirmation to ensure you don't lock yourself out of your own server. When running as a script, this prompt defaults to "Abort" if it doesn't receive a "y" input.
+
+2. The Solution
+
+We use ufw --force enable or echo "y" | ufw enable. This forces the firewall to start and applies the rules immediately.
+
+3. The Final Script
+
+Copy the code below into your setup.sh file.
+
 #!/bin/bash
 
+# Exit on any error
 set -e
 
+# 1. Fix potential dpkg interruptions
+echo "🛠️ Checking for interrupted package operations..."
+sudo dpkg --configure -a
+
+# 2. Set non-interactive mode for apt
+export DEBIAN_FRONTEND=noninteractive
+
 echo "🚀 Starting system setup..."
+
+# 3. Update and Upgrade
 echo "Updating package lists..."
 apt-get update -y
-
 echo "Upgrading installed packages..."
-apt-get upgrade -y
+apt-get upgrade -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold"
 
+# 4. Install Essentials
 echo "Installing essential packages..."
-apt-get install -y nano fish curl zip unzip nginx ufw
+apt-get install -y nano fish curl zip unzip nginx ufw python3 python3-pip python-is-python3
 
+# 5. Configure Firewall (THE FIX)
 echo "Configuring Firewall (UFW)..."
-sudo ufw enable
-sudo ufw allow ssh
-sudo ufw allow 22
-sudo ufw allow 22/tcp
-echo "✅ Firewall enabled and SSH allowed."
+# We allow SSH BEFORE enabling to ensure we don't get locked out
+ufw allow ssh
+ufw allow 22/tcp
+ufw allow 80/tcp
+ufw allow 443/tcp
+# Use --force to bypass the interactive (y/n) prompt
+ufw --force enable
+echo "✅ Firewall enabled and SSH/Web ports allowed."
 
-echo "Setting Fish as the default shell for the current user and root..."
-
+# 6. Configure Fish Shell
+echo "Setting Fish as the default shell..."
 FISH_PATH=$(which fish)
-
 if [ -n "$FISH_PATH" ]; then
-    chsh -s "$FISH_PATH" "$USER"
-    echo "✅ Default shell for user '$USER' set to Fish."
+    chsh -s "$FISH_PATH" root
+    [ "$USER" != "root" ] && chsh -s "$FISH_PATH" "$USER"
+    echo "✅ Default shell set to Fish."
 else
-    echo "⚠️ Could not find fish shell executable. Skipping default shell setup."
+    echo "⚠️ Could not find fish shell."
 fi
-
-echo "Configuring Fish shell aliases and interactive session settings..."
 
 mkdir -p "/root/.config/fish"
 cat <<EOF > /root/.config/fish/config.fish
 if status is-interactive
     alias cls='clear'
     alias lsa='ls -a'
-    alias myip='curl api.myip.com'
+    alias myip='curl -s api.myip.com'
     alias rma='rm -rf'
     alias pyser="python3 -m http.server"
     alias fishls="cat ~/.config/fish/config.fish"
     alias nodeports="sudo lsof -i -P -n | grep node | grep -E ':(441[0-9]|44[2-9][0-9]|4[5-9][0-9]{2}|5000)\b'"
+    echo "Welcome! Type 'fishls' for aliases."
 end
 EOF
 
-echo "✅ Fish configuration updated for root."
-
-echo "Installing the latest version of Node.js and npm..."
-curl -fsSL https://deb.nodesource.com/setup_current.x | bash -
+# 7. Install Node.js
+echo "Installing Node.js..."
+curl -fsSL [https://deb.nodesource.com/setup_current.x](https://deb.nodesource.com/setup_current.x) | bash -
 apt-get install -y nodejs
-echo "✅ Node.js and npm installed successfully."
-node -v
-npm -v
-
-echo "Installing the latest Python 3 and pip..."
-apt-get install -y python3 python3-pip python-is-python3
-echo "✅ Python 3 and pip installed successfully."
-python --version
-pip --version
-
-echo "Installing PM2 process manager globally..."
 npm install -g pm2
-echo "✅ PM2 installed successfully."
-pm2 --version
 
-echo -e "\n\n"
-echo -e "    \e[1;32m****************************************************\e[0m"
-echo -e "    \e[1;32m* *\e[0m"
-echo -e "    \e[1;32m* 🎉 SERVER SETUP COMPLETE! 🎉           *\e[0m"
-echo -e "    \e[1;32m* *\e[0m"
-echo -e "    \e[1;32m****************************************************\e[0m"
-echo -e "\n\e[1;34mEverything is ready for you. Here's a summary:\e[0m"
-echo "    - System is fully updated and upgraded."
-echo "    - Nano, Zip, Unzip, and Nginx are installed."
-echo "    - UFW Firewall is active (SSH allowed)."
-echo "    - Fish is your new default shell with custom aliases."
-echo "    - Node.js (Latest), npm, and PM2 are ready."
-echo "    - Python 3 and Pip are installed."
-echo -e "\n\e[1;33mIMPORTANT: To start using the Fish shell, you must log out and log back in.\e[0m"
-echo -e "\nEnjoy your new, powerful development environment! 🚀\n"
-
-# Self-destruct: Delete this script after completion
-rm -- "$0"
+echo -e "\n\033[1;32m🎉 SERVER SETUP COMPLETE! 🎉\033[0m"
+echo "Node: $(node -v)"
+echo "NPM:  $(npm -v)"
+echo "PM2:  $(pm2 -v)"
+echo -e "\n\033[1;33mPlease log out and log back in to activate Fish shell.\033[0m\n"
