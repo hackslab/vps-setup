@@ -32,9 +32,7 @@ ufw allow 22/tcp
 ufw allow 80/tcp
 ufw allow 443/tcp
 
-# Use --force to bypass the interactive (y/n) prompt that caused the "Aborted" error
-ufw --force enable
-echo "✅ Firewall enabled and SSH/Web ports allowed."
+echo "✅ Firewall rules added for SSH/Web ports."
 
 # 6. Configure Fish Shell
 echo "Setting Fish as the default shell..."
